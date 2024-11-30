@@ -8,9 +8,11 @@
 #include <unordered_set>
 #include <stdexcept>
 #include <conio.h>
+#include <cmath>
 #include <windows.h>
 #include <algorithm>
 #include <fstream>
+#include "colors.h"
 
 using namespace std;
 
@@ -25,12 +27,15 @@ struct SalaryBreakdown;
 // Admin instance
 Admin& getAdminInstance();
 
+// Main functions
 void displayEmployee(const Employee& emp);
 void displayEmployeeHours(const EmployeeHours& hours);
 void addEmployee(unordered_map<string, EmployeeData>& employees);
 void displayAllEmployees(const unordered_map<string, EmployeeData>& employees);
 void calculateEmployeeSalary(unordered_map<string, EmployeeData>& employees);
-
+void searchEmployees(unordered_map<string, EmployeeData>& employees);
+void updateEmployee(unordered_map<string, EmployeeData>& employeesMap);
+void deleteEmployee(unordered_map<string, EmployeeData>& employeesMap);
 
 // Helper functions
 SalaryBreakdown calculateSalary(const EmployeeData& data);
@@ -39,10 +44,9 @@ int get_int(const string& prompt);
 bool parseDate(const string& input, Date& date);
 string get_password(const string prompt);
 size_t hashPassword(const string& password);
-void comparePasswords(const unordered_map<string, EmployeeData>& employees, size_t password);
+string toLower(const string& str);
 
-
-// File I/o
+// File I/O
 void saveToFile(const unordered_map<string, EmployeeData>& employees, const string& filename);
 void loadFromFile(unordered_map<string, EmployeeData>& employees, const string& filename);
 
@@ -92,70 +96,6 @@ struct SalaryBreakdown
     double netSalary;
 };
 
-// Main function
-int main()
-{
-    SetConsoleOutputCP(CP_UTF8);
-    unordered_map<string, EmployeeData> employees;
-
-    string filename = "employees.txt";
-
-    loadFromFile(employees, filename);
-
-    cout << "enter password: ";
-    string pass = get_password("enter password: ");
-
-    int choice;
-    do
-    {
-        cout << "\nMenu:\n"
-             << "1. Add Employee\n"
-             << "2. Display Employee\n"
-             << "3. Save Data\n"
-             << "4. Exit\n"
-             << "Enter your choice: ";
-        cin >> choice;
-        cin.ignore(); // Clear newline from buffer
-
-        if (choice == 1)
-        {
-            addEmployee(employees);
-            saveToFile(employees, filename);
-        }
-        else if (choice == 2)
-        {
-            displayAllEmployees(employees);
-            /*
-            cout << "Enter Employee ID to display: ";
-            string id;
-            getline(cin, id);
-            if (employees.find(id) != employees.end())
-            {
-                employees[id].employee.display();
-                employees[id].hours.display();
-            }
-            else
-            {
-                cout << "Employee not found.\n";
-            }
-            */
-        }
-        else if (choice == 3)
-        {
-            // TODO
-            calculateEmployeeSalary(employees);
-
-        }
-        else if (choice != 4)
-        {
-            cout << "Invalid choice. Try again.\n";
-        }
-    } while (choice != 4);
-
-    return 0;
-}
-
-
 struct Admin
 {
     string username;
@@ -172,6 +112,7 @@ struct Admin
                                           "Username cannot be empty.",
                                           [](const string& username) { return !username.empty(); });
 
+        cout << "Enter password: ";
         string inputPassword = get_password("Enter password: ");
 
         if (inputUsername == username && hashPassword(inputPassword) == password)
@@ -188,7 +129,10 @@ struct Admin
 
     bool confirm()
     {
-        string inputPassword = get_password("\nEnter admin password: ");
+        cout << "\nEnter admin password: ";
+        string inputPassword = get_password("Enter admin password: ");
+
+        if (inputPassword == "0") return false;
 
         return (hashPassword(inputPassword) == password);
     }
@@ -206,6 +150,97 @@ Admin& getAdminInstance()
 {
     static Admin instance;
     return instance;
+}
+
+int main()
+{
+    SetConsoleOutputCP(CP_UTF8);
+    unordered_map<string, EmployeeData> employees;
+    Admin& admin = getAdminInstance();
+    bool isLoggedIn = false;
+    string filename = "employees.txt";
+
+    loadFromFile(employees, filename);
+
+    do
+    {
+        if (admin.login())
+            isLoggedIn = true;
+    }
+    while (!isLoggedIn);
+
+
+
+    while (true)
+    {
+        system("CLS");
+        cout << "\n" << CYAN << "╔═══════════════════════════════════════════╗\n";
+        cout << "║         Puffy Fowlers™ Payroll            ║\n";
+        cout << "╚═══════════════════════════════════════════╝" << RESET << "\n\n";
+
+        int choice;
+
+        cout << YELLOW << "╔═══════════════════════════════════════════╗\n";
+        cout << "║  1. ➕ Add Employee                       ║\n";
+        cout << "║  2. 👥 Display Employees                  ║\n";
+        cout << "║  3. 💾 Calculate Employee Salary          ║\n";
+        cout << "║  4. 🔍 Search Employees                   ║\n";
+        cout << "║  5. 🗑️ Delete Employees                   ║\n";
+        cout << "║  6. ✏️ Update Employees                   ║\n";
+        cout << "║  7. 🚪 Exit                               ║\n";
+        cout << "╚═══════════════════════════════════════════╝" << RESET << "\n";
+        choice = get_int(GREEN + "📝 Enter your choice: " + RESET);
+
+        switch (choice)
+        {
+            case 1:
+            {
+                addEmployee(employees);
+                saveToFile(employees, filename);
+                break;
+            }
+            case 2:
+            {
+                displayAllEmployees(employees);
+                break;
+            }
+            case 3:
+            {
+                calculateEmployeeSalary(employees);
+                saveToFile(employees, filename);
+                break;
+            }
+            case 4:
+            {
+                searchEmployees(employees);
+                break;
+            }
+            case 5:
+            {
+                // Add delete employee functionality here
+                // deleteEmployee(employees);
+                saveToFile(employees, filename);
+                break;
+            }
+            case 6:
+            {
+                // update functionality
+                break;
+            }
+            case 7:
+            {
+                cout << GREEN << "👋 Thank you for using Puffy Fowlers™ Payroll" << RESET << "\n";
+                return 0;
+            }
+            default:
+            {
+                cout << RED << "❌ Invalid choice. Please try again." << RESET << "\n";
+                break;
+            }
+        }
+    }
+
+    return 0;
 }
 
 string Date::toString() const
@@ -237,6 +272,11 @@ void EmployeeHours::display() const
 
 void addEmployee(unordered_map<string, EmployeeData>& employees)
 {
+    system("CLS");
+    cout << "\n" << CYAN;
+    cout << "╔═══════════════════════════════════════════╗\n";
+    cout << "║               Add Employee                ║\n";
+    cout << "╚═══════════════════════════════════════════╝\n" << RESET << "\n";
     Employee employee;
 
     unordered_set<string> existingIDs;
@@ -247,44 +287,43 @@ void addEmployee(unordered_map<string, EmployeeData>& employees)
 
     do
     {
-        employee.id = "EMP" + to_string(rand() % 1000000);
+        employee.id = "EMP" + to_string(rand() % 1000);
     }
     while (existingIDs.find(employee.id) != existingIDs.end());
 
-
-    employee.name = getValidatedInput("Name: ",
-        "Name must contain only alphabetic characters and spaces.",
+    employee.name = getValidatedInput(GREEN + "Name: " + RESET,
+        RED + "Name must contain only alphabetic characters and spaces." + RESET,
         [](const string& name) { return !name.empty() && regex_match(name, regex(R"(^[a-zA-Z ]+$)")); });
 
-    employee.sex = getValidatedInput("Sex (M/F): ",
-        "Invalid input. Please enter 'M' or 'F'.",
+    employee.sex = getValidatedInput(GREEN + "Sex (M/F): " + RESET,
+        RED + "Invalid input. Please enter 'M' or 'F'." + RESET,
         [](const string& sex) { return sex == "M" || sex == "F"; });
 
-    employee.maritalStatus = getValidatedInput("Marital Status: ",
-        "Marital Status cannot be empty.",
+    employee.maritalStatus = getValidatedInput(GREEN + "Marital Status: " + RESET,
+        RED + "Marital Status cannot be empty." + RESET,
         [](const string& status) { return !status.empty(); });
 
     while (true)
     {
-        string input = getValidatedInput("Birthday (YYYY/MM/DD): ",
-            "Invalid date format. Please use 'YYYY/MM/DD'.",
+        string input = getValidatedInput(GREEN + "Birthday (YYYY/MM/DD): " + RESET,
+            RED + "Invalid date format. Please use 'YYYY/MM/DD'." + RESET,
             [](const string& dateStr) { return regex_match(dateStr, regex(R"(^\d{4}/\d{2}/\d{2}$)")); });
 
         if (parseDate(input, employee.birthday))
         {
             break;
         }
-        cout << "Invalid date value. Please try again.\n";
+        cout << RED << "Invalid date value. Please try again." << RESET << "\n";
     }
 
-    employee.address = getValidatedInput("Address: ",
-        "Address cannot be empty.",
+    employee.address = getValidatedInput(GREEN + "Address: " + RESET,
+        RED + "Address cannot be empty." + RESET,
         [](const string& address) { return !address.empty(); });
 
-    employee.dependents = get_int("Dependents: ");
+    employee.dependents = get_int(GREEN + "Dependents: " + RESET);
 
-    employee.position = getValidatedInput("Position: ",
-        "Invalid position. Please enter 'staff', 'supervisor', or 'manager'.",
+    employee.position = getValidatedInput(GREEN + "Position: " + RESET,
+        RED + "Invalid position. Please enter 'staff', 'supervisor', or 'manager'." + RESET,
         [](const string& position)
         {
             string lowerPosition = position;
@@ -292,8 +331,8 @@ void addEmployee(unordered_map<string, EmployeeData>& employees)
             return lowerPosition == "staff" || lowerPosition == "supervisor" || lowerPosition == "manager";
         });
 
-    employee.department = getValidatedInput("Department: ",
-        "Department cannot be empty.",
+    employee.department = getValidatedInput(GREEN + "Department: " + RESET,
+        RED + "Department cannot be empty." + RESET,
         [](const string& department) { return !department.empty(); });
 
     Admin& admin = getAdminInstance();
@@ -302,11 +341,12 @@ void addEmployee(unordered_map<string, EmployeeData>& employees)
         if (admin.confirm())
         {
             employees[employee.id] = {employee, {0, 0, 0, 0}};
-            cout << "\nEmployee with the ID: " << employee.id << " added successfully!\n";
+            cout << GREEN << "\nEmployee with the ID: " << employee.id << " added successfully!" << RESET << "\n";
+            Sleep(1500);
             break;
         }
 
-        cout << "Invalid password. Please try again.\n";
+        cout << RED << "Invalid password. Please try again." << RESET << "\n";
     }
 }
 
@@ -323,13 +363,15 @@ void displayAllEmployees(const unordered_map<string, EmployeeData>& employees)
     const int DEPARTMENT_WIDTH = 13;
 
     system("CLS");
+    cout << CYAN;
     cout << "╔════════════════════════════════════════════════════════════════════════════════════════════════════════╗\n";
     cout << "║                                   Employee Records                                                     ║\n";
-    cout << "╚════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n\n";
+    cout << "╚════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n";
+    cout << RESET << "\n";
 
     if (employees.empty())
     {
-        cout << "No employees to display!\n";
+        cout << YELLOW << "No employees to display!" << RESET << "\n";
         return;
     }
 
@@ -357,9 +399,9 @@ void displayAllEmployees(const unordered_map<string, EmployeeData>& employees)
                           BIRTHDAY_WIDTH, ADDRESS_WIDTH, DEPENDENTS_WIDTH,
                           POSITION_WIDTH, DEPARTMENT_WIDTH};
 
-    cout << createLine('+', '+', '+', widths) << '\n';
+    cout << CYAN << createLine('+', '+', '+', widths) << RESET << '\n';
 
-    cout << "| " << setw(ID_WIDTH) << left << "ID"
+    cout << CYAN << "| " << setw(ID_WIDTH) << left << "ID"
          << " | " << setw(NAME_WIDTH) << left << "Name"
          << " | " << setw(SEX_WIDTH) << left << "Sex"
          << " | " << setw(MARITAL_WIDTH) << left << "Marital Status"
@@ -367,9 +409,9 @@ void displayAllEmployees(const unordered_map<string, EmployeeData>& employees)
          << " | " << setw(ADDRESS_WIDTH) << left << "Address"
          << " | " << setw(DEPENDENTS_WIDTH) << left << "Dependents"
          << " | " << setw(POSITION_WIDTH) << left << "Position"
-         << " | " << setw(DEPARTMENT_WIDTH) << left << "Department" << " |\n";
+         << " | " << setw(DEPARTMENT_WIDTH) << left << "Department" << " |" << RESET << "\n";
 
-    cout << createLine('+', '+', '+', widths) << '\n';
+    cout << CYAN << createLine('+', '+', '+', widths) << RESET << '\n';
 
     for (const auto& [_, data] : employees)
     {
@@ -386,71 +428,211 @@ void displayAllEmployees(const unordered_map<string, EmployeeData>& employees)
              << " | " << setw(DEPARTMENT_WIDTH) << left << formatField(e.department, DEPARTMENT_WIDTH) << " |\n";
     }
 
-    cout << createLine('+', '+', '+', widths) << '\n';
+    cout << CYAN << createLine('+', '+', '+', widths) << RESET << '\n';
+
+    cout << GREEN << "\nPress any key to return..." << RESET;
+    cin.get();
+    system("CLS");
 }
 
 void calculateEmployeeSalary(unordered_map<string, EmployeeData>& employees)
 {
-    // Display employees list
-    cout << "Employees List:\n";
+    system("CLS");
+
+    cout << "\n" << BOLD_BLUE;
+    cout << "╔═══════════════════════════════════════════╗\n";
+    cout << "║             Calculate Salary              ║\n";
+    cout << "╚═══════════════════════════════════════════╝\n" << RESET << '\n';
+
+    cout << "\n" << CYAN;
+    cout << "╔════════════════════════════════════════════════════════════════════╗\n";
+    cout << "║                         EMPLOYEES LIST                             ║\n";
+    cout << "╠════════════╦═══════════════════════════════╦═══════════════════════╣\n";
+    cout << "║    ID      ║            NAME               ║       POSITION        ║\n";
+    cout << "╠════════════╬═══════════════════════════════╬═══════════════════════╣\n";
+
     for (const auto& [id, data] : employees)
     {
-        cout << "ID: " << id << "| Name: " << data.employee.name << " | Position: " << data.employee.position << '\n';
+        cout << "║ " << setw(11) << left << id
+             << "║ " << setw(30) << left << data.employee.name
+             << "║ " << setw(22) << left << data.employee.position << "║\n";
     }
+    cout << "╚════════════╩═══════════════════════════════╩═══════════════════════╝\n" << RESET << "\n";
 
     string selectedID;
-    cout << "Enter Employee ID: ";
-    getline(cin >> ws, selectedID); // Skips any leading whitespace before reading the ID
+    cout << GREEN << "👤 Enter Employee ID (0 to exit): " << RESET;
+    getline(cin >> ws, selectedID);
 
-    // Find selected employee by ID
-    auto it = employees.find(selectedID);
-    if (it == employees.end())
+    if (selectedID == "0")
     {
-        cerr << "Error: Invalid Employee ID.\n";
+        cout << YELLOW << "Returning to main menu..." << RESET;
+        Sleep(2000);
         return;
     }
 
-    EmployeeData& selectedEmployee = it->second; // Get reference to selected employee's data
+    auto it = employees.find(selectedID);
+    if (it == employees.end())
+    {
+        cout << RED << "\n❌ Error: Invalid Employee ID.\n" << RESET;
+        return;
+    }
+
+    EmployeeData& selectedEmployee = it->second;
     EmployeeHours& hours = selectedEmployee.hours;
 
-    // Get employee details
-    cout << "\nEnter details for " << selectedEmployee.employee.name << ":\n";
-    hours.overtimeHours = get_int("Overtime Hours: ");
-    hours.holidayDays = get_int("Holiday Days: ");
-    hours.absentDays = get_int("Absent Days: ");
-    hours.lateDays = get_int("Late Days: ");
+    cout << "\n" << CYAN;
+    cout << "╔═══════════════════════════════════════════╗\n";
+    cout << "║ Time Record for: " << setw(25) << left << selectedEmployee.employee.name << "║\n";
+    cout << "╠═══════════════════════════════════════════╣\n" << RESET;
+
+    hours.overtimeHours = get_int(GREEN + "║ ⏰ Overtime Hours: " + RESET);
+    hours.holidayDays = get_int(GREEN + "║ 🎉 Holiday Days: " + RESET);
+    hours.absentDays = get_int(GREEN + "║ ❌ Absent Days: " + RESET);
+    hours.lateDays = get_int(GREEN + "║ ⏲️  Late Days: " + RESET);
+
+    cout << CYAN << "╚═══════════════════════════════════════════╝\n" << RESET;
 
     Admin& admin = getAdminInstance();
+    bool isCorrect = false;
 
-        // Admin confirmation
+    do
+    {
         if (admin.confirm())
         {
-            // Here you should likely update or save the employee data,
-            // but ensure 'employee.id' and the object being assigned are correct
-            employees[selectedEmployee.employee.id] = selectedEmployee;
-            return;
+            isCorrect = true;
+            break;
         }
+        cout << RED << "❌ Invalid password. Please try again." << RESET << '\n';
+    }
+    while (!isCorrect);
 
-        cout << "Invalid password. Please try again.\n";
+    employees[selectedEmployee.employee.id] = selectedEmployee;
 
-
-    // Calculate salary breakdown
     try
     {
         SalaryBreakdown breakdown = calculateSalary(selectedEmployee);
 
-        // Display salary breakdown
-        cout << "\nSalary Breakdown for " << selectedEmployee.employee.name << ":\n";
-        cout << "Gross Pay: P" << fixed << setprecision(2) << breakdown.grossPay << '\n';
-        cout << "Tax Deductions: P" << breakdown.taxDeductions << '\n';
-        cout << "Penalties: P" << breakdown.penalties << '\n';
-        cout << "Net Salary: P" << breakdown.netSalary << '\n';
+        cout << "\n" << CYAN;
+        cout << "╔═══════════════════════════════════════════╗\n";
+        cout << "║           SALARY BREAKDOWN                ║\n";
+        cout << "╠═══════════════════════════════════════════╣\n";
+        cout << "║ Employee: " << setw(32) << left << selectedEmployee.employee.name << "║\n";
+        cout << "╠═══════════════════════════════════════════╣\n";
+        cout << "║ 💰 Gross Pay:      ₱" << setw(22) << fixed << setprecision(2) << breakdown.grossPay << "║\n";
+        cout << "║ 📊 Tax Deductions: ₱" << setw(22) << breakdown.taxDeductions << "║\n";
+        cout << "║ ⚠️  Penalties:     ₱" << setw(22) << abs(breakdown.penalties) << "║\n";
+        cout << "╠═══════════════════════════════════════════╣\n";
+        cout << "║ 💵 Net Salary:     ₱" << setw(22) << breakdown.netSalary << "║\n";
+        cout << "╚═══════════════════════════════════════════╝\n" << RESET;
+
+        cout << GREEN << "\nPress any key to return..." << RESET;
+        cin.get();
+        system("CLS");
     }
     catch (const invalid_argument& e)
     {
-        cerr << "Error calculating salary: " << e.what() << '\n';
+        cout << RED << "\n❌ Error calculating salary: " << e.what() << RESET << '\n';
     }
 }
+
+void searchEmployees(unordered_map<string, EmployeeData>& employeesMap)
+{
+    // Check if the unordered_map is empty
+    if (employeesMap.empty())
+    {
+        cout << YELLOW << "No employees found." << RESET << endl;
+        Sleep(2000);
+        return;
+    }
+
+    string searchTerm;
+    vector<EmployeeData> filteredEmployees;
+
+    while (true)
+    {
+        system("cls");
+        cout << BOLD << CYAN << "╔══════════════════════════════════════════╗" << RESET << '\n';
+        cout << BOLD << CYAN << "║          Search Employees                ║" << RESET << '\n';
+        cout << BOLD << CYAN << "╚══════════════════════════════════════════╝" << RESET << '\n' << '\n';
+
+        cout << YELLOW << "Enter search term (press Esc to exit): " << RESET;
+        cout << searchTerm;
+
+        if (!searchTerm.empty())
+        {
+            filteredEmployees.clear();
+            string lowerSearchTerm = toLower(searchTerm);
+
+            // Loop through all employees in the unordered_map
+            for (const auto& entry : employeesMap)
+            {
+                const EmployeeData& employeeData = entry.second;
+                const Employee& employee = employeeData.employee;
+
+                // Check if the search term matches any employee field
+                if (toLower(employee.name).find(lowerSearchTerm) != string::npos ||
+                    toLower(employee.position).find(lowerSearchTerm) != string::npos ||
+                    toLower(employee.department).find(lowerSearchTerm) != string::npos)
+                {
+                    filteredEmployees.push_back(employeeData);
+                }
+            }
+
+            if (!filteredEmployees.empty())
+            {
+                cout << "\n\n";
+                cout << MAGENTA << "┌────────────────────┬────────────────────┬────────────────────┐" << RESET << endl;
+                cout << MAGENTA << "│ " << WHITE << setw(18) << left << "Name"
+                     << MAGENTA << " │ " << WHITE << setw(18) << left << "Position"
+                     << MAGENTA << " │ " << WHITE << setw(18) << left << "Department" << MAGENTA << " │" << RESET << endl;
+                cout << MAGENTA << "├────────────────────┼────────────────────┼────────────────────┤" << RESET << endl;
+
+                for (const auto& employeeData : filteredEmployees)
+                {
+                    const Employee& employee = employeeData.employee;
+                    cout << MAGENTA << "│ " << WHITE << setw(18) << left << employee.name
+                         << MAGENTA << " │ " << WHITE << setw(18) << left << employee.position
+                         << MAGENTA << " │ " << WHITE << setw(18) << left << employee.department << MAGENTA << " │" << RESET << endl;
+                }
+
+                cout << MAGENTA << "└────────────────────┴────────────────────┴────────────────────┘" << RESET << endl;
+            }
+            else
+            {
+                cout << "\n\n" << YELLOW << "No matching employees found." << RESET << endl;
+            }
+        }
+
+        char ch = _getch();
+
+        if (ch == 27) // Esc key
+        {
+            break;
+        }
+        else if (ch == 8) // Backspace
+        {
+            if (!searchTerm.empty())
+            {
+                searchTerm.pop_back();
+            }
+        }
+        else if (isprint(ch))
+        {
+            searchTerm += ch;
+        }
+    }
+}
+
+void updateEmployee(unordered_map<string, EmployeeData>& employeesMap)
+{
+
+}
+
+void deleteEmployee(unordered_map<string, EmployeeData>& employeesMap)
+{
+
+}
+
 // Helpers
 
 SalaryBreakdown calculateSalary(const EmployeeData& data)
@@ -459,15 +641,15 @@ SalaryBreakdown calculateSalary(const EmployeeData& data)
     const EmployeeHours& hours = data.hours;
 
     double basePay;
-    if (emp.position == "Staff")
+    if (toLower(emp.position) == "staff")
     {
         basePay = 90.0;
     }
-    else if (emp.position == "Supervisor")
+    else if (toLower(emp.position) == "supervisor")
     {
         basePay = 140.0;
     }
-    else if (emp.position == "Manager")
+    else if (toLower(emp.position) == "manager")
     {
         basePay = 190.0;
     }
@@ -513,8 +695,6 @@ SalaryBreakdown calculateSalary(const EmployeeData& data)
     // Return salary breakdown
     return SalaryBreakdown{grossSalary, totalTaxes, penalties, netSalary};
 }
-
-
 
 string getValidatedInput(const string& prompt, const string& errorMsg, function<bool(const string&)> validator)
 {
@@ -624,6 +804,14 @@ size_t hashPassword(const string& password)
 {
     hash<string> hasher;
     return hasher(password);
+}
+
+string toLower(const string& str)
+{
+    string lower = str;
+    transform(lower.begin(), lower.end(), lower.begin(),
+        [](unsigned char c) { return tolower(c); });
+    return lower;
 }
 
 // File I/O Functions

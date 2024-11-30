@@ -1,13 +1,3 @@
-EMP18467
-Jairo
-M
-Single
-2004 11 3
-Bitas
-2
-Manager
-BSIT
-0 0 0 0
 EMP41
 Briane
 M
@@ -17,4 +7,34 @@ San Roque
 2
 Manager
 IT
+2 2 2 2
+EMP6334
+James
+M
+Single
+2004 11 26
+Gapan
+2
+Staff
+Marketing
 0 0 0 0
+EMP18467
+Jairo
+M
+Single
+2004 11 3
+Bitas
+2
+Manager
+BSIT
+1 2 3 1
+EMP467
+Peter
+M
+Single
+2004 7 25
+Gapan
+2
+Staff
+Marketing
+3 2 4 2
