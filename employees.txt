@@ -1,0 +1,20 @@
+EMP18467
+Jairo
+M
+Single
+2004 11 3
+Bitas
+2
+Manager
+BSIT
+0 0 0 0
+EMP41
+Briane
+M
+Single
+2004 10 4
+San Roque
+2
+Manager
+IT
+0 0 0 0

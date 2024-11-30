@@ -1,0 +1,16 @@
+# depslib dependency file v1.0
+1732939076 source:c:\users\asus\documents\crud systems\brianepayroll\main.cpp
+	<iostream>
+	<string>
+	<vector>
+	<sstream>
+	<iomanip>
+	<regex>
+	<unordered_map>
+	<unordered_set>
+	<stdexcept>
+	<conio.h>
+	<windows.h>
+	<algorithm>
+	<fstream>
+
