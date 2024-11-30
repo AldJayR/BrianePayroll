@@ -10,6 +10,7 @@
 #include <conio.h>
 #include <cmath>
 #include <windows.h>
+#include <cctype>
 #include <algorithm>
 #include <fstream>
 #include "colors.h"
@@ -219,12 +220,15 @@ int main()
             {
                 // Add delete employee functionality here
                 // deleteEmployee(employees);
+                deleteEmployee(employees);
                 saveToFile(employees, filename);
                 break;
             }
             case 6:
             {
                 // update functionality
+                updateEmployee(employees);
+                saveToFile(employees, filename);
                 break;
             }
             case 7:
@@ -537,7 +541,6 @@ void calculateEmployeeSalary(unordered_map<string, EmployeeData>& employees)
 
 void searchEmployees(unordered_map<string, EmployeeData>& employeesMap)
 {
-    // Check if the unordered_map is empty
     if (employeesMap.empty())
     {
         cout << YELLOW << "No employees found." << RESET << endl;
@@ -623,14 +626,196 @@ void searchEmployees(unordered_map<string, EmployeeData>& employeesMap)
     }
 }
 
-void updateEmployee(unordered_map<string, EmployeeData>& employeesMap)
+void updateEmployee(unordered_map<string, EmployeeData>& employees)
 {
+    if (employees.empty())
+    {
+        cout << YELLOW << "No employees found." << RESET << endl;
+        Sleep(2000);
+        return;
+    }
 
+    system("cls");
+    cout << BOLD << CYAN << "╔══════════════════════════════════════════╗" << RESET << '\n';
+    cout << BOLD << CYAN << "║           Update Employees               ║" << RESET << '\n';
+    cout << BOLD << CYAN << "╚══════════════════════════════════════════╝" << RESET << '\n';
+
+    cout << "\n" << CYAN;
+    cout << "╔════════════════════════════════════════════════════════════════════╗\n";
+    cout << "║                         EMPLOYEES LIST                             ║\n";
+    cout << "╠════════════╦═══════════════════════════════╦═══════════════════════╣\n";
+    cout << "║    ID      ║            NAME               ║       POSITION        ║\n";
+    cout << "╠════════════╬═══════════════════════════════╬═══════════════════════╣\n";
+
+    for (const auto& [id, data] : employees)
+    {
+        cout << "║ " << setw(11) << left << id
+             << "║ " << setw(30) << left << data.employee.name
+             << "║ " << setw(22) << left << data.employee.position << "║\n";
+    }
+    cout << "╚════════════╩═══════════════════════════════╩═══════════════════════╝\n" << RESET << "\n";
+
+    string selectedID;
+    cout << GREEN << "👤 Enter Employee ID (0 to exit): " << RESET;
+    getline(cin >> ws, selectedID);
+
+    if (selectedID == "0")
+    {
+        cout << YELLOW << "Returning to main menu..." << RESET;
+        Sleep(2000);
+        return;
+    }
+
+    auto it = employees.find(selectedID);
+    if (it == employees.end())
+    {
+        cout << RED << "\n❌ Error: Invalid Employee ID.\n" << RESET;
+        Sleep(2000);
+        return;
+    }
+
+    EmployeeData& selectedEmployee = it->second;
+
+    cout << CYAN << "\n╔═══════════════════════════════════════════╗" << RESET << '\n';
+    cout << CYAN << "║           Update Employee Details         ║" << RESET << '\n';
+    cout << CYAN << "╚═══════════════════════════════════════════╝" << RESET << '\n';
+
+    cout << YELLOW << "\nUpdating Employee: " << selectedEmployee.employee.name << RESET << '\n';
+    cout << YELLOW << "(Leave fields blank to keep them unchanged)\n" << RESET << '\n';
+
+    string input;
+
+    input = getValidatedInput(GREEN + "Name: " + RESET,
+        RED + "Name must contain only alphabetic characters and spaces." + RESET,
+        [](const string& name) { return name.empty() || regex_match(name, regex(R"(^[a-zA-Z ]+$)")); });
+    if (!input.empty()) selectedEmployee.employee.name = input;
+
+    input = getValidatedInput(GREEN + "Sex (M/F): " + RESET,
+        RED + "Invalid input. Please enter 'M' or 'F'." + RESET,
+        [](const string& sex) { return sex.empty() || sex == "M" || sex == "F"; });
+    if (!input.empty()) selectedEmployee.employee.sex = input;
+
+    input = getValidatedInput(GREEN + "Marital Status: " + RESET,
+        RED + "Marital Status cannot be empty if provided." + RESET,
+        [](const string& status)  { return true; });
+    if (!input.empty()) selectedEmployee.employee.maritalStatus = input;
+
+    while (true)
+    {
+        input = getValidatedInput(GREEN + "Birthday (YYYY/MM/DD): " + RESET,
+            RED + "Invalid date format. Please use 'YYYY/MM/DD'." + RESET,
+            [](const string& dateStr) { return dateStr.empty() || regex_match(dateStr, regex(R"(^\d{4}/\d{2}/\d{2}$)")); });
+        if (input.empty()) break;
+        if (parseDate(input, selectedEmployee.employee.birthday)) break;
+        cout << RED << "Invalid date value. Please try again." << RESET << "\n";
+    }
+
+    input = getValidatedInput(GREEN + "Address: " + RESET,
+        RED + "Address cannot be empty if provided." + RESET,
+        [](const string& address) { return true; });
+    if (!input.empty()) selectedEmployee.employee.address = input;
+
+    input = getValidatedInput(GREEN + "Dependents: " + RESET,
+        RED + "Dependents must be a non-negative integer." + RESET,
+        [](const string& dep) { return dep.empty() || regex_match(dep, regex(R"(^\d+$)")); });
+    if (!input.empty()) selectedEmployee.employee.dependents = stoi(input);
+
+    input = getValidatedInput(GREEN + "Position (staff/supervisor/manager): " + RESET,
+        RED + "Invalid position. Please enter 'staff', 'supervisor', or 'manager'." + RESET,
+        [](const string& position) {
+            if (position.empty()) return true;
+            string lowerPosition = position;
+            transform(lowerPosition.begin(), lowerPosition.end(), lowerPosition.begin(), ::tolower);
+            return lowerPosition == "staff" || lowerPosition == "supervisor" || lowerPosition == "manager";
+        });
+    if (!input.empty()) selectedEmployee.employee.position = input;
+
+    input = getValidatedInput(GREEN + "Department: " + RESET,
+        RED + "Department cannot be empty if provided." + RESET,
+        [](const string& department) { return true; });
+    if (!input.empty()) selectedEmployee.employee.department = input;
+
+    cout << GREEN << "\nEmployee details updated successfully!" << RESET << '\n';
+    cout << YELLOW << "Press any key to return to the main menu..." << RESET;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cin.get();
 }
 
-void deleteEmployee(unordered_map<string, EmployeeData>& employeesMap)
+void deleteEmployee(unordered_map<string, EmployeeData>& employees)
 {
+    if (employees.empty())
+    {
+        cout << YELLOW << "No employees found." << RESET << endl;
+        Sleep(2000);
+        return;
+    }
 
+    system("cls");
+    cout << BOLD << RED << "╔══════════════════════════════════════════╗" << RESET << '\n';
+    cout << BOLD << RED << "║           Delete Employee                ║" << RESET << '\n';
+    cout << BOLD << RED << "╚══════════════════════════════════════════╝" << RESET << '\n';
+
+    cout << "\n" << CYAN;
+    cout << "╔════════════════════════════════════════════════════════════════════╗\n";
+    cout << "║                         EMPLOYEES LIST                             ║\n";
+    cout << "╠════════════╦═══════════════════════════════╦═══════════════════════╣\n";
+    cout << "║    ID      ║            NAME               ║       POSITION        ║\n";
+    cout << "╠════════════╬═══════════════════════════════╬═══════════════════════╣\n";
+
+    for (const auto& [id, data] : employees)
+    {
+        cout << "║ " << setw(11) << left << id
+             << "║ " << setw(30) << left << data.employee.name
+             << "║ " << setw(22) << left << data.employee.position << "║\n";
+    }
+    cout << "╚════════════╩═══════════════════════════════╩═══════════════════════╝\n" << RESET << "\n";
+
+    string selectedID;
+    cout << GREEN << "👤 Enter Employee ID to delete (0 to exit): " << RESET;
+    getline(cin >> ws, selectedID);
+
+    if (selectedID == "0")
+    {
+        cout << YELLOW << "Returning to main menu..." << RESET;
+        Sleep(2000);
+        return;
+    }
+
+    auto it = employees.find(selectedID);
+    if (it == employees.end())
+    {
+        cout << RED << "\n❌ Error: Invalid Employee ID.\n" << RESET;
+        Sleep(2000);
+        return;
+    }
+
+    string employeeName = it->second.employee.name;
+
+    cout << YELLOW << "\nAre you sure you want to delete the employee: " << employeeName << "? (Y/N): " << RESET;
+    char confirmation;
+    cin >> confirmation;
+
+    if (toupper(confirmation) == 'Y')
+    {
+        Admin& admin = getAdminInstance();
+        if (admin.confirm())
+        {
+            employees.erase(it);
+            cout << GREEN << "\n✅ Employee " << employeeName << " has been successfully deleted." << RESET << '\n';
+        }
+        else
+        {
+            cout << RED << "\n❌ Admin authentication failed. Employee not deleted." << RESET << '\n';
+        }
+    }
+    else
+    {
+        cout << YELLOW << "\nDeletion cancelled." << RESET << '\n';
+    }
+
+    cout << YELLOW << "Press any key to return to the main menu..." << RESET;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cin.get();
 }
 
 // Helpers
@@ -734,7 +919,7 @@ int get_int(const string& prompt)
         }
         else
         {
-            cout << "Invalid input. Please enter a valid integer.\n";
+            cout << RED << "Invalid input. Please enter a valid integer.\n";
         }
     }
 }
